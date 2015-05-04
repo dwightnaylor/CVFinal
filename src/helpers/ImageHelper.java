@@ -81,6 +81,17 @@ public class ImageHelper {
 		return null;
 	}
 
+	public static boolean equal(BufferedImage im1, BufferedImage im2, int colorEpsilon) {
+		for (int i = 0; i < im1.getWidth(); i++) {
+			for (int j = 0; j < im1.getHeight(); j++) {
+				if ((im1.getRGB(i, j) & 0xFF000000) != 0 && (im2.getRGB(i, j) & 0xFF000000) != 0 && colorDist(im1.getRGB(i, j), im2.getRGB(i, j)) > colorEpsilon) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	public static BufferedImage getClosed(BufferedImage image, int closeRadius) {
 		BufferedImage ret = deepCopy(image);
 		for (int x = 0; x < image.getWidth(); x++) {

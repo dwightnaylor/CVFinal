@@ -17,6 +17,7 @@ import javax.swing.JRootPane;
 public class ScreenReader {
 	Robot r;
 	Rectangle screenRectangle;
+	BufferedImage upperLeftImage = ImageHelper.load("windowUpperLeft.png");
 
 	/**
 	 * The change in screen location since the last frame
@@ -37,8 +38,9 @@ public class ScreenReader {
 	}
 
 	public void isolateGameScreen() {
+		System.out.println("Finding screen...");
 		BufferedImage screen = getWholeScreen();
-		Point upperLeftRough = ImageHelper.find(screen, ImageHelper.load("windowUpperLeft.png"));
+		Point upperLeftRough = ImageHelper.find(screen, upperLeftImage);
 		if (upperLeftRough == null) {
 			System.err.println("Unable to find game window.");
 			System.exit(0);
@@ -48,9 +50,16 @@ public class ScreenReader {
 		// ImageHelper.showImage(r.createScreenCapture(screenRectangle));
 	}
 
+	public void reisolateIfNecessary() {
+		BufferedImage upperLeft = r.createScreenCapture(new Rectangle(screenRectangle.x + 22, screenRectangle.y - 20, upperLeftImage.getWidth(), upperLeftImage.getHeight()));
+		if (!ImageHelper.equal(upperLeft, upperLeftImage, 90)) {
+			isolateGameScreen();
+		}
+	}
+
 	private void processNewImage(BufferedImage newImage) {
 		if (oldImage != null) {
-			
+
 		}
 		oldImage = newImage;
 	}
@@ -61,11 +70,12 @@ public class ScreenReader {
 			@Override
 			public void paint(Graphics g) {
 				super.paint(g);
+				reisolateIfNecessary();
 				BufferedImage screen = r.createScreenCapture(screenRectangle);
 				processNewImage(screen);
-				//Adjusting the output image...
-				ImageHelper.applyFunction(screen, (Integer i) -> ImageHelper.colorDist(i, 0xFF000000) < 200 ? 0xFF000000 : 0xFFFFFFFF);
-//				screen = ImageHelper.getClosed(screen, 1);
+				// Adjusting the output image...
+				ImageHelper.applyFunction(screen, (Integer i) -> ImageHelper.colorDist(i, 0xFF000000) < 100 ? 0xFF000000 : 0xFFFFFFFF);
+				// screen = ImageHelper.getClosed(screen, 1);
 				g.drawImage(screen, 0, 0, null);
 			}
 		});
