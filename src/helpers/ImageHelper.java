@@ -6,6 +6,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -17,6 +18,11 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import org.opencv.core.Mat;
+
+/**
+ * @author Dwight
+ */
 public class ImageHelper {
 	static Map<String, BufferedImage> imgMap = new HashMap<String, BufferedImage>();
 
@@ -60,6 +66,28 @@ public class ImageHelper {
 
 	public static Point find(BufferedImage image, BufferedImage subImage) {
 		return find(image, subImage, 90);
+	}
+
+	public static void saveImage(BufferedImage image, String file) {
+		try {
+			ImageIO.write(image, "png", new File(file));
+		} catch (IOException e) {
+		}
+	}
+
+	/**
+	 * stolen from
+	 * http://www.codeproject.com/Tips/752511/How-to-Convert-Mat-to-BufferedImage-Vice-Versa
+	 */
+	public static BufferedImage mat2Img(Mat in) {
+		byte[] data = new byte[in.width() * in.height() * (int) in.elemSize()];
+		in.get(0, 0, data);
+
+		// BufferedImage out = new BufferedImage(in.width(), in.height(),
+		// BufferedImage.TYPE_INT_RGB);
+		BufferedImage out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_BYTE_GRAY);
+		out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
+		return out;
 	}
 
 	public static Point find(BufferedImage image, BufferedImage subImage, int colorEpsilon) {
