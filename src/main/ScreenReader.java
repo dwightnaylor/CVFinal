@@ -72,15 +72,6 @@ public class ScreenReader {
 		}
 	}
 
-	private void processNewImage(BufferedImage newImage) {
-		if (oldImage != null) {
-			// ImageHelper.saveImage(oldImage, "im1.png");
-			// ImageHelper.saveImage(newImage, "im2.png");
-			// System.exit(0);
-		}
-		oldImage = newImage;
-	}
-
 	public void showDisplay() {
 		JFrame frame = new JFrame();
 		frame.setContentPane(new JRootPane() {
@@ -88,17 +79,18 @@ public class ScreenReader {
 			public void paint(Graphics g) {
 				super.paint(g);
 				reisolateIfNecessary();
-				BufferedImage screen = r.createScreenCapture(screenRectangle);
-				// processNewImage(ImageHelper.deepCopy(screen));
-				processNewImage(screen);
-				ImageHelper.applyFunction(screen, (Integer i) -> ImageHelper.colorDist(i, 0xFF000000) < 100 ? 0xFF000000 : 0xFFFFFFFF);
+				BufferedImage oldScreen = r.createScreenCapture(screenRectangle);
+				reisolateIfNecessary();
+				BufferedImage newScreen = r.createScreenCapture(screenRectangle);
 				// Adjusting the output image...
-				Mat screenMat = createScreenMatrix(screen);
+				Mat oldScreenMat = createScreenMatrix(oldScreen);
+				Mat newScreenMat = createScreenMatrix(newScreen);
+				Mat difference = new Mat();
+				Core.absdiff(newScreenMat, oldScreenMat, difference);
+				// dealWithContours(screenMat, screen);
 
-				dealWithContours(screenMat, screen);
-
-				// g.drawImage(ImageHelper.mat2Img(screenMat), 0, 0, null);
-				g.drawImage(screen, 0, 0, null);
+				g.drawImage(ImageHelper.mat2Img(difference), 0, 0, null);
+				// g.drawImage(screen, 0, 0, null);
 			}
 		});
 		frame.getContentPane().setPreferredSize(new Dimension(screenRectangle.width, screenRectangle.height));
@@ -112,8 +104,8 @@ public class ScreenReader {
 	private Mat createScreenMatrix(BufferedImage screen) {
 		Mat screenMat = new Mat(590, 590, CV_32S);
 		screenMat.put(0, 0, ((DataBufferInt) screen.getRaster().getDataBuffer()).getData());
-		screenMat.convertTo(screenMat, CV_8U);
-		morphologyEx(screenMat, screenMat, MORPH_OPEN, CLOSING_KERNEL);
+		// screenMat.convertTo(screenMat, CV_8U);
+		// morphologyEx(screenMat, screenMat, MORPH_OPEN, CLOSING_KERNEL);
 		return screenMat;
 	}
 
@@ -138,8 +130,15 @@ public class ScreenReader {
 				}
 				if (best != -1) {
 					if (dist != 0) {
-						int x = pastRect.x + pastRect.width / 2 + delta.x;
-						int y = pastRect.y + pastRect.height / 2 + delta.y;
+						Rect rect = Imgproc.boundingRect(contours.get(best));
+						int x = rect.x + rect.width / 2;
+						int y = rect.y + rect.height / 2;
+						// The estimate of the movementspeed
+						// double targetDist = Math.sqrt(Math.pow(rect.x + rect.width / 2 -
+						// screenRectangle.width / 2, 2) + Math.pow(rect.y + rect.height / 2 -
+						// screenRectangle.height / 2, 2));
+						// int mx = rect.x - pastRect.x;
+						// int my = rect.y - pastRect.y;
 						if (x > 30 && y > 30 && x < screenRectangle.width - 30 && y < screenRectangle.height - 30)
 							Clicker.clickAt(screenRectangle.x + x, screenRectangle.y + y);
 					}
@@ -189,7 +188,6 @@ public class ScreenReader {
 		Graphics g = screen.getGraphics();
 		ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 		findContours(MatHelper.invertColors(screenMat), contours, new Mat(), RETR_TREE, CHAIN_APPROX_SIMPLE);
-		System.out.println(contours.size() + "--------------------------------------");
 		contours.removeIf(p -> {
 			Rect rect = Imgproc.boundingRect(p);
 			if (rect.width <= 20 || rect.height <= 20)
@@ -204,7 +202,7 @@ public class ScreenReader {
 			Rect rect = Imgproc.boundingRect(mp);
 			// if (20 > Math.max(Math.abs(rect.x - screenRectangle.getWidth() / 2), Math.abs(rect.y
 			// - screenRectangle.getHeight() / 2)))
-			// continue;
+			// contianue;
 			// Core.rectangle(screenMat, new org.opencv.core.Point(rect.x, rect.y), new
 			// org.opencv.core.Point(rect.x + rect.width, rect.y + rect.height), new Scalar(128),
 			// 3);

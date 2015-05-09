@@ -18,6 +18,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 /**
@@ -65,7 +66,7 @@ public class ImageHelper {
 	}
 
 	public static Point find(BufferedImage image, BufferedImage subImage) {
-		return find(image, subImage, 90);
+		return find(image, subImage, 100);
 	}
 
 	public static void saveImage(BufferedImage image, String file) {
@@ -80,13 +81,18 @@ public class ImageHelper {
 	 * http://www.codeproject.com/Tips/752511/How-to-Convert-Mat-to-BufferedImage-Vice-Versa
 	 */
 	public static BufferedImage mat2Img(Mat in) {
-		byte[] data = new byte[in.width() * in.height() * (int) in.elemSize()];
-		in.get(0, 0, data);
-
-		// BufferedImage out = new BufferedImage(in.width(), in.height(),
-		// BufferedImage.TYPE_INT_RGB);
-		BufferedImage out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_BYTE_GRAY);
-		out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
+		BufferedImage out;
+		if (in.type() == CvType.CV_8U) {
+			byte[] data = new byte[in.width() * in.height() * (int) in.elemSize()];
+			in.get(0, 0, data);
+			out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_BYTE_GRAY);
+			out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
+		} else {
+			int[] data = new int[in.width() * in.height() * (int) in.elemSize()];
+			in.get(0, 0, data);
+			out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_INT_RGB);
+			out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
+		}
 		return out;
 	}
 

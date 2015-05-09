@@ -22,7 +22,7 @@ public class ArrayHelper {
 		}
 		return ret;
 	}
-	
+
 	public static boolean[] reverse(boolean... arg) {
 		boolean[] ret = new boolean[arg.length];
 		for (int i = 0; i < arg.length; i++) {
