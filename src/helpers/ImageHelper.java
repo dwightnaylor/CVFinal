@@ -66,7 +66,7 @@ public class ImageHelper {
 	}
 
 	public static Point find(BufferedImage image, BufferedImage subImage) {
-		return find(image, subImage, 100);
+		return find(image, subImage, 150);
 	}
 
 	public static void saveImage(BufferedImage image, String file) {
@@ -88,9 +88,9 @@ public class ImageHelper {
 			out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_BYTE_GRAY);
 			out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
 		} else {
-			int[] data = new int[in.width() * in.height() * (int) in.elemSize()];
+			byte[] data = new byte[in.width() * in.height() * (int) in.elemSize()];
 			in.get(0, 0, data);
-			out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_INT_RGB);
+			out = new BufferedImage(in.width(), in.height(), BufferedImage.TYPE_3BYTE_BGR);
 			out.getRaster().setDataElements(0, 0, in.width(), in.height(), data);
 		}
 		return out;

@@ -14,6 +14,7 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -25,11 +26,10 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
+import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
 public class ScreenReader {
-	final Mat CLOSING_KERNEL = Mat.ones(9, 9, CV_8UC1);
-
 	Robot r;
 	Rectangle screenRectangle;
 	BufferedImage upperLeftImage = ImageHelper.load("windowUpperLeft.png");
@@ -79,17 +79,36 @@ public class ScreenReader {
 			public void paint(Graphics g) {
 				super.paint(g);
 				reisolateIfNecessary();
-				BufferedImage oldScreen = r.createScreenCapture(screenRectangle);
+				BufferedImage bufImg1 = r.createScreenCapture(screenRectangle);
 				reisolateIfNecessary();
-				BufferedImage newScreen = r.createScreenCapture(screenRectangle);
+				BufferedImage bufImg2 = r.createScreenCapture(screenRectangle);
+
+				// Convert BufferedImage types to work with mats
+				BufferedImage oldScreen = new BufferedImage(bufImg1.getWidth(), bufImg1.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+				oldScreen.getGraphics().drawImage(bufImg1, 0, 0, null);
+				BufferedImage newScreen = new BufferedImage(bufImg2.getWidth(), bufImg2.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+				newScreen.getGraphics().drawImage(bufImg2, 0, 0, null);
+
 				// Adjusting the output image...
 				Mat oldScreenMat = createScreenMatrix(oldScreen);
 				Mat newScreenMat = createScreenMatrix(newScreen);
+
+				// Measure change...
+				Mat oldScreenMat_G = new Mat();
+				Mat newScreenMat_G = new Mat();
+				Imgproc.cvtColor(oldScreenMat, oldScreenMat_G, Imgproc.COLOR_BGR2GRAY);
+				Imgproc.cvtColor(newScreenMat, newScreenMat_G, Imgproc.COLOR_BGR2GRAY);
 				Mat difference = new Mat();
-				Core.absdiff(newScreenMat, oldScreenMat, difference);
+
+				Core.subtract(newScreenMat_G, oldScreenMat_G, difference);
+				// Core.absdiff(newScreenMat_G, oldScreenMat_G, difference);
 				// dealWithContours(screenMat, screen);
 
-				g.drawImage(ImageHelper.mat2Img(difference), 0, 0, null);
+//				Highgui.imwrite("oldScreen.jpg", oldScreenMat);
+//				Highgui.imwrite("newScreen.jpg", newScreenMat);
+//				Highgui.imwrite("difference.jpg", difference);
+
+				g.drawImage(ImageHelper.mat2Img(newScreenMat), 0, 0, null);
 				// g.drawImage(screen, 0, 0, null);
 			}
 		});
@@ -102,11 +121,10 @@ public class ScreenReader {
 	}
 
 	private Mat createScreenMatrix(BufferedImage screen) {
-		Mat screenMat = new Mat(590, 590, CV_32S);
-		screenMat.put(0, 0, ((DataBufferInt) screen.getRaster().getDataBuffer()).getData());
-		// screenMat.convertTo(screenMat, CV_8U);
-		// morphologyEx(screenMat, screenMat, MORPH_OPEN, CLOSING_KERNEL);
-		return screenMat;
+		byte[] data = ((DataBufferByte) screen.getRaster().getDataBuffer()).getData();
+		Mat mat = new Mat(screen.getHeight(), screen.getWidth(), CV_8UC3);
+		mat.put(0, 0, data);
+		return mat;
 	}
 
 	ArrayList<MatOfPoint> lastContours;
